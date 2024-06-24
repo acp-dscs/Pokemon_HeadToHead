@@ -1,119 +1,82 @@
 import streamlit as st
 import pandas as pd
+import requests
+import random
 
+st.title(":rainbow[Pokemon] Explorer Head to Head Comparison!")
 
-st.title("📊 Data evaluation app")
+# User to pick a Pokemon by number using the Slider
+pokemon_number = st.slider("Choose your Pokemon for battle!", 1, 155)
 
-st.write(
-    "We are so glad to see you here. ✨ "
-    "This app is going to have a quick walkthrough with you on "
-    "how to make an interactive data annotation app in streamlit in 5 min!"
-)
+# Get data on User Pokemon
+pokemon_url = f"https://pokeapi.co/api/v2/pokemon/{pokemon_number}"
+response = requests.get(pokemon_url).json() 
 
-st.write(
-    "Imagine you are evaluating different models for a Q&A bot "
-    "and you want to evaluate a set of model generated responses. "
-    "You have collected some user data. "
-    "Here is a sample question and response set."
-)
+# Program to to randomly select another Pokemon for compasrison
+pokemon_number_random = random.randint(1, 151)
+pokemon_url_random = f"https://pokeapi.co/api/v2/pokemon/{pokemon_number_random}"
+response_random = requests.get(pokemon_url_random).json()
 
-data = {
-    "Questions": [
-        "Who invented the internet?",
-        "What causes the Northern Lights?",
-        "Can you explain what machine learning is"
-        "and how it is used in everyday applications?",
-        "How do penguins fly?",
-    ],
-    "Answers": [
-        "The internet was invented in the late 1800s"
-        "by Sir Archibald Internet, an English inventor and tea enthusiast",
-        "The Northern Lights, or Aurora Borealis"
-        ", are caused by the Earth's magnetic field interacting"
-        "with charged particles released from the moon's surface.",
-        "Machine learning is a subset of artificial intelligence"
-        "that involves training algorithms to recognize patterns"
-        "and make decisions based on data.",
-        " Penguins are unique among birds because they can fly underwater. "
-        "Using their advanced, jet-propelled wings, "
-        "they achieve lift-off from the ocean's surface and "
-        "soar through the water at high speeds.",
-    ],
-}
+# Isolate specific facts about the Users Pokemon
+pokemon_name = response['name']
+pokemon_height = response['height']
+pokemon_weight = response['weight']
+pokemon_sprites = response['sprites']['front_default']
+pokemon_cries = f"https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest/{pokemon_number}.ogg"
+pokemon_moves_count = len(response['moves'])
+pokemon_moves = [move['move']['name'].capitalize() for move in response['moves']]
+pokemon_stats = response['stats']
 
-df = pd.DataFrame(data)
+# Isolate specific facts about the Randomly Selected Pokemon
+pokemon_name_random = response_random['name']
+pokemon_height_random = response_random['height']
+pokemon_weight_random = response_random['weight']
+pokemon_sprites_random = response_random['sprites']['front_default']
+pokemon_cries_random = f"https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest/{pokemon_number_random}.ogg"
+pokemon_moves_count_random = len(response_random['moves'])
+pokemon_moves_random = response_random['moves']
 
-st.write(df)
+# Display Users Pokemon Details 
+st.title(pokemon_name.title())
+st.image(pokemon_sprites)
+st.audio(pokemon_cries)
+st.write(f"{pokemon_name.title()} is {pokemon_height}m tall and has a weight of {pokemon_weight}kg!")
+st.write(f"Count of moves to pick from: {pokemon_moves_count}")
 
-st.write(
-    "Now I want to evaluate the responses from my model. "
-    "One way to achieve this is to use the very powerful `st.data_editor` feature. "
-    "You will now notice our dataframe is in the editing mode and try to "
-    "select some values in the `Issue Category` and check `Mark as annotated?` once finished 👇"
-)
+# Display Randomly Selected Pokemon Details 
+st.title(pokemon_name_random.title())
+st.image(pokemon_sprites_random)
+st.audio(pokemon_cries_random)
+st.write(f"{pokemon_name_random.title()} is {pokemon_height_random}m tall and has a weight of {pokemon_weight_random}kg!")
+st.write(f"Count of moves to pick from: {pokemon_moves_count_random}")
 
-df["Issue"] = [True, True, True, False]
-df["Category"] = ["Accuracy", "Accuracy", "Completeness", ""]
+st.title(f":rainbow[HEAD TO HEAD]")
+st.title(f"{pokemon_name.title()} VS {pokemon_name_random.title()}")
 
-new_df = st.data_editor(
-    df,
-    column_config={
-        "Questions": st.column_config.TextColumn(width="medium", disabled=True),
-        "Answers": st.column_config.TextColumn(width="medium", disabled=True),
-        "Issue": st.column_config.CheckboxColumn("Mark as annotated?", default=False),
-        "Category": st.column_config.SelectboxColumn(
-            "Issue Category",
-            help="select the category",
-            options=["Accuracy", "Relevance", "Coherence", "Bias", "Completeness"],
-            required=False,
-        ),
-    },
-)
+# Display Key Stats of the User Pokemon in a table
+st.header(f"List of Stats for your :rainbow[Pokemon: {pokemon_name.title()}]")
 
-st.write(
-    "You will notice that we changed our dataframe and added new data. "
-    "Now it is time to visualize what we have annotated!"
-)
+# Create a DataFrame for the location encounters
+stats_data = [{'Key Stat': stat['stat']['name'].capitalize(), 'Base Value': stat['base_stat'], 'Effort': stat['effort']} for stat in pokemon_stats]
+df_stats = pd.DataFrame(stats_data)
 
-st.divider()
+# Display the DataFrame as a table
+st.write(df_stats)
 
-st.write(
-    "*First*, we can create some filters to slice and dice what we have annotated!"
-)
+# Create the Dropdown Widget
+selected_move = st.selectbox('Choose an option:', pokemon_moves)
 
-col1, col2 = st.columns([1, 1])
-with col1:
-    issue_filter = st.selectbox("Issues or Non-issues", options=new_df.Issue.unique())
-with col2:
-    category_filter = st.selectbox(
-        "Choose a category",
-        options=new_df[new_df["Issue"] == issue_filter].Category.unique(),
-    )
+# Display the Option Selected by the User
+st.subheader(f"{pokemon_name.title()} will challenge {pokemon_name_random.title()} with the move you selected: {selected_move}.")
+st.title(f":rainbow[POW!!!] {pokemon_name.title()} WINS")
+st.title(f"K.O. {selected_move} is a Kick Ass move!")
+st.write('Press the button below to gift your Pokemon some balloons to celebrate!')
 
-st.dataframe(
-    new_df[(new_df["Issue"] == issue_filter) & (new_df["Category"] == category_filter)]
-)
+# Button with balloons for fun
+if 'counter' not in st.session_state.keys():
+    st.session_state['counter'] = 0
 
-st.markdown("")
-st.write(
-    "*Next*, we can visualize our data quickly using `st.metrics` and `st.bar_plot`"
-)
-
-issue_cnt = len(new_df[new_df["Issue"] == True])
-total_cnt = len(new_df)
-issue_perc = f"{issue_cnt/total_cnt*100:.0f}%"
-
-col1, col2 = st.columns([1, 1])
-with col1:
-    st.metric("Number of responses", issue_cnt)
-with col2:
-    st.metric("Annotation Progress", issue_perc)
-
-df_plot = new_df[new_df["Category"] != ""].Category.value_counts().reset_index()
-
-st.bar_chart(df_plot, x="Category", y="count")
-
-st.write(
-    "Here we are at the end of getting started with streamlit! Happy Streamlit-ing! :balloon:"
-)
-
+if st.button("Gift your Pokemon some Balloons!"):
+    st.balloons()
+    st.session_state['counter'] += 1
+st.write(f"You have gifted your Pokemon {st.session_state['counter']} balloons!")
