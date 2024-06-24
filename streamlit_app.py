@@ -80,3 +80,21 @@ if st.button("Gift your Pokemon some Balloons!"):
     st.balloons()
     st.session_state['counter'] += 1
 st.write(f"You have gifted your Pokemon {st.session_state['counter']} balloons!")
+
+# Create DataFrame for the Bar Chart
+bar_data = {
+    'Category': ['Height', 'Weight', 'Height', 'Weight'],
+    'Value': [pokemon_height, pokemon_weight, pokemon_height_random, pokemon_weight_random],
+    'Pokemon': [pokemon_name, pokemon_name, pokemon_name_random, pokemon_name_random]
+}
+df_pokemon_bar = pd.DataFrame(bar_data)
+
+# Display the DataFrame
+st.write(df_pokemon_bar)
+
+# Create Pivot Table for data to read into the Bar Chart
+df_pivot_bar = df_pokemon_bar.pivot(index='Category', columns='Pokemon', values='Value')
+
+# Display Bar Chart
+st.subheader('Head to Head Height Vs Weight')
+st.bar_chart(df_pivot_bar)
